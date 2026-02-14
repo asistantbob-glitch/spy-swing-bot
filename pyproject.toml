@@ -1,0 +1,8 @@
+[project]
+name = "spybot"
+version = "0.1.0"
+description = "SPY swing bot skeleton for IBKR"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+addopts = "-q"

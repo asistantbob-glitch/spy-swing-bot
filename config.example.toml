@@ -1,0 +1,50 @@
+[bot]
+name = "spy-swing-paper"
+timezone = "UTC"
+
+[broker]
+kind = "ibkr"
+# paper ports are often 7497; live often 7496 (depends on your IB Gateway config)
+host = "127.0.0.1"
+port = 7497
+client_id = 7
+account = ""
+
+[market]
+symbol = "SPY"
+exchange = "ARCA"
+currency = "USD"
+# We fetch 1h bars and resample to 4h for signals.
+bar_size = "1 hour"
+lookback_days = 120
+
+[timeframes]
+# Primary decision timeframe: "4h" (recommended) or "1h"
+primary = "4h"
+# Whether to restrict to regular trading hours (recommended for SPY)
+use_rth = true
+
+
+[strategy]
+# Simple swing: trend filter + pullback entry
+sma_fast = 20
+sma_slow = 100
+rsi_period = 14
+rsi_entry_max = 45
+atr_period = 14
+stop_atr_mult = 2.5
+
+[risk]
+# Percent of net liquidation value
+max_position_pct = 10
+# Absolute daily loss cap (USD)
+max_daily_loss_usd = 50
+# Max equity drawdown percentage
+max_drawdown_pct = 5
+
+[run]
+# Evaluate on an interval.
+# 60 = every hour (for 1h/4h strategies)
+eval_every_minutes = 60
+# If true, never place real orders
+paper_only = true

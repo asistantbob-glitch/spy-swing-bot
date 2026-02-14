@@ -1,0 +1,6 @@
+ib-insync==0.9.86
+pandas==2.3.2
+numpy==2.2.2
+pydantic==2.10.6
+tomli==2.0.1; python_version < '3.11'
+rich==13.9.4
