@@ -17,11 +17,18 @@ class RiskState:
 
 
 class RiskManager:
-    def __init__(self, *, max_position_pct: float, max_daily_loss_usd: float, max_drawdown_pct: float):
+    def __init__(
+        self,
+        *,
+        max_position_pct: float,
+        max_daily_loss_usd: float,
+        max_drawdown_pct: float,
+        state: RiskState | None = None,
+    ):
         self.max_position_pct = max_position_pct / 100.0
         self.max_daily_loss_usd = float(max_daily_loss_usd)
         self.max_drawdown_pct = max_drawdown_pct / 100.0
-        self.state = RiskState()
+        self.state = state or RiskState()
 
     def update_equity(self, acct: AccountState) -> None:
         now = datetime.now(timezone.utc)
