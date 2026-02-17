@@ -78,7 +78,7 @@ def run_bot_once(cfg: Config, *, dry_run: bool = False) -> None:
 
         if cfg.timeframes.primary == "4h":
             from .timeframes import resample_ohlcv
-            bars = resample_ohlcv(bars_1h, "4H")
+            bars = resample_ohlcv(bars_1h, "4h")
         else:
             bars = bars_1h
 
