@@ -94,13 +94,17 @@ def run_bot_once(cfg: Config, *, dry_run: bool = False) -> None:
         sig = strat.generate(bars, current_position_value=current_value, target_position_value=max_value)
 
         log.info(f"Signal: {sig.action} ({sig.reason})")
+        from .journal import append_signal
+        append_signal(symbol=cfg.market.symbol, action=sig.action, reason=sig.reason)
 
         if sig.action == "BUY":
             res = broker.place_target_value_order(cfg.market.symbol, sig.target_position_value, paper_only=cfg.run.paper_only)
             log.info(f"Order: {res.status} id={res.order_id}")
+            append_signal(symbol=cfg.market.symbol, action=f"ORDER_{res.status}", reason=f"order_id={res.order_id}")
         elif sig.action == "SELL":
             res = broker.place_target_value_order(cfg.market.symbol, 0.0, paper_only=cfg.run.paper_only)
             log.info(f"Order: {res.status} id={res.order_id}")
+            append_signal(symbol=cfg.market.symbol, action=f"ORDER_{res.status}", reason=f"order_id={res.order_id}")
         else:
             log.info("No action.")
 
