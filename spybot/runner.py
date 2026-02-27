@@ -30,10 +30,18 @@ def run_bot_once(cfg: Config, *, dry_run: bool = False) -> None:
     log.info(f"Symbol: {cfg.market.symbol}")
     log.info(f"Dry run: {dry_run}")
 
+    # Load risk state from disk so limits remain enforced across restarts.
+    from pathlib import Path
+    from .state import default_state_path, load_risk_state, save_risk_state
+
+    state_path = default_state_path()
+    loaded_state = load_risk_state(state_path)
+
     risk = RiskManager(
         max_position_pct=cfg.risk.max_position_pct,
         max_daily_loss_usd=cfg.risk.max_daily_loss_usd,
         max_drawdown_pct=cfg.risk.max_drawdown_pct,
+        state=loaded_state,
     )
 
     strat = SpySwingStrategy(
@@ -56,6 +64,7 @@ def run_bot_once(cfg: Config, *, dry_run: bool = False) -> None:
     try:
         acct = broker.get_account_state()
         risk.update_equity(acct)
+        save_risk_state(state_path, risk.state)
 
         ok_dd, msg_dd = risk.check_drawdown(acct)
         ok_dl, msg_dl = risk.check_daily_loss(acct)
