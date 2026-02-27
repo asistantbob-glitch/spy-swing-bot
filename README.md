@@ -67,3 +67,23 @@ python -m spybot run --config config.toml
 - This bot is designed for **swing** trading using **1H bars** and a **4H primary timeframe** (recommended).
 - It will refuse to place orders if any risk limit is breached.
 
+## Optional: IB Gateway watchdog (no-VNC routine operations)
+This watchdog checks if IBKR API port `7497` is reachable and requests a restart of `ibgateway.service` when down.
+
+Install user units:
+```bash
+mkdir -p ~/.config/systemd/user
+cp ops/systemd/ibgateway-watchdog.service ~/.config/systemd/user/
+cp ops/systemd/ibgateway-watchdog.timer ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now ibgateway-watchdog.timer
+```
+
+Inspect status/logs:
+```bash
+systemctl --user status ibgateway-watchdog.timer --no-pager
+journalctl --user -u ibgateway-watchdog.service -n 50 --no-pager
+```
+
+Caveat: IBKR may still require occasional manual login/2FA/disclaimer interaction in VNC.
+
