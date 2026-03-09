@@ -19,6 +19,8 @@ def make_broker(cfg: Config) -> Broker:
             port=cfg.broker.port,
             client_id=cfg.broker.client_id,
             account=cfg.broker.account,
+            exchange=cfg.market.exchange,
+            currency=cfg.market.currency,
         )
     raise ValueError(f"Unsupported broker kind: {cfg.broker.kind}")
 
