@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 import pandas as pd
-from ib_insync import IB, Stock, util
+from ib_insync import IB, Stock, Forex, util
 
 from .broker import Broker, OrderResult
 from .models import AccountState, Position
@@ -14,12 +14,29 @@ log = logging.getLogger(__name__)
 
 
 class IbkrBroker(Broker):
-    def __init__(self, *, host: str, port: int, client_id: int, account: str = ""):
+    def __init__(
+        self,
+        *,
+        host: str,
+        port: int,
+        client_id: int,
+        account: str = "",
+        exchange: str = "ARCA",
+        currency: str = "USD",
+    ):
         self.host = host
         self.port = port
         self.client_id = client_id
         self.account = account
+        self.exchange = exchange
+        self.currency = currency
         self.ib = IB()
+
+    def _make_contract(self, symbol: str):
+        # Forex shorthand: EURUSD with IDEALPRO becomes Forex('EURUSD').
+        if self.exchange.upper() == "IDEALPRO" and len(symbol) == 6 and symbol.isalpha():
+            return Forex(symbol.upper())
+        return Stock(symbol, self.exchange, self.currency)
 
     def connect(self) -> None:
         log.info(f"Connecting to IBKR {self.host}:{self.port} clientId={self.client_id}...")
@@ -57,31 +74,45 @@ class IbkrBroker(Broker):
         return None
 
     def get_bars(self, symbol: str, *, bar_size: str, lookback_days: int, use_rth: bool = True) -> pd.DataFrame:
-        contract = Stock(symbol, "ARCA", "USD")
+        contract = self._make_contract(symbol)
         self.ib.qualifyContracts(contract)
+
+        # Forex historical bars are typically requested with MIDPOINT.
+        what_to_show = "MIDPOINT" if isinstance(contract, Forex) else "TRADES"
+
         bars = self.ib.reqHistoricalData(
             contract,
             endDateTime="",
             durationStr=f"{lookback_days} D",
             barSizeSetting=bar_size,
-            whatToShow="TRADES",
+            whatToShow=what_to_show,
             useRTH=bool(use_rth),
             formatDate=1,
         )
+
         df = util.df(bars)
-        if df.empty:
-            return df
+        if df is None or getattr(df, "empty", True):
+            return pd.DataFrame(columns=["time", "open", "high", "low", "close", "volume"])
+
         df = df.rename(columns={"date": "time"})
+        if "time" not in df.columns:
+            return pd.DataFrame(columns=["time", "open", "high", "low", "close", "volume"])
+
         # Ensure datetime
         if not pd.api.types.is_datetime64_any_dtype(df["time"]):
             df["time"] = pd.to_datetime(df["time"])
-        return df[["time", "open", "high", "low", "close", "volume"]].copy()
+
+        cols = ["time", "open", "high", "low", "close", "volume"]
+        for c in cols:
+            if c not in df.columns:
+                df[c] = 0.0
+        return df[cols].copy()
 
     def place_target_value_order(self, symbol: str, target_value: float, *, paper_only: bool) -> OrderResult:
         if paper_only:
             return OrderResult(order_id="DRY", status="SKIPPED_PAPER_ONLY")
 
-        contract = Stock(symbol, "ARCA", "USD")
+        contract = self._make_contract(symbol)
         self.ib.qualifyContracts(contract)
 
         # Get price
